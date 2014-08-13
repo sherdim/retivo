@@ -1,5 +1,11 @@
 library(shiny)
 
+zz=c('Normal', 'Weibull','Gamma',
+     'Density',
+     'ex-Gaussian',#='exgaussian',
+     'Weibull-Gaussian'#='weibullgaussian'
+)
+
 shinyUI(pageWithSidebar(
   
   # Application title
@@ -17,12 +23,14 @@ shinyUI(pageWithSidebar(
                 '.tsv'
               )
     ),
-    p('Pick .csv or .tsv file with two columns: time and reaction time, s.' ),
+    p('Pick .csv or .tsv file with two columns: time and reaction time, s.',
+      a('example',href='http://sherdim.shinyapps.io/retivo/rt1.csv')),
     tags$hr(),
     sliderInput("valid",
                 "Valid diapason, s:",
                 min = 0.0,
                 max = 3.0,
+                step = 0.005,
                 #round=-3,
                 value = c(0.1, 1)),
     sliderInput("tstep",
@@ -34,18 +42,32 @@ shinyUI(pageWithSidebar(
     
     tags$hr(),
     p('Parameters of distribution model'),
-    selectInput('model','Model Type:',
-    c(density='density','weibull',ecdf='Empirical CDF','Weibull-Gaussian')),
+    selectInput('model','Model Type:', zz),
+    conditionalPanel(condition = "input.model == 'Density'",
+      
     sliderInput("skewness",
                 "Skewness:",
                 min = 0,
                 max = 1,
-                value = 0.2)
+                value = 0.2),
+    sliderInput("bw",
+                "Bandwidth (density):",
+                min = 0.005,
+                max = 0.1,
+                step = 0.005,
+                value = 0.02)
+    )
     
   ),
   
   # Show a plot of the generated distribution
   mainPanel(
-    plotOutput("distPlot")
+    plotOutput("distPlot"),
+    withMathJax(p('Green line - mean, Blue line - median, Magenta lines -  25 and 75 quantiles')),
+    #uiOutput('formula'),
+    
+    #h3('Information about selected distribution model'),
+    uiOutput('info')
+    #verbatimTextOutput('info')
   )
 ))
