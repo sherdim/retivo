@@ -1,5 +1,6 @@
 library(shiny)
 library(MASS)
+#library(car)
 
 shinyServer(function(input, output, session) {
   
@@ -12,7 +13,7 @@ shinyServer(function(input, output, session) {
     if (is.null(inFile)){
       #return(NULL)
       #debug
-      m=read.csv("~\\retivo\\rt.csv")
+      m=read.csv("rt.csv")
       x=m$v
     }else{
       m=read.csv(inFile$datapath)
@@ -52,13 +53,23 @@ shinyServer(function(input, output, session) {
       xx=fn$x
       yy=fn$y
       s= sprintf('bandwidth = %.3f, kernel="%s"', fn$bw,'gaussian')
-    }else if (input$model=='Weibull-Gaussian'){
-      fn= function(x,m,s,v,l) (l/v)*(x/v)^(l-1) * exp(-x/v) * 1/((2*pi)^0.5 * s) * exp(-(x-m)^2/(2*s^2))
-      p=fitdistr(x, fn, start=list(m=0.3, s=0.1, v=0.1, l=0.1))
-      kk=round(coef(p), 3)
-      yy=fn(xx, kk[1],kk[2],kk[3],kk[4])
     
+    
+    }else if (input$model=='Weibull-Gaussian'){
+      
+      #fn= function(x,m,s,v,l) (l/v)*(x/v)^(l-1) * exp(-x/v) * 1/((2*pi)^0.5 * s) * exp(-(x-m)^2/(2*s^2))
+      #p=fitdistr(x, fn, start=list(m=0.3, s=0.1, v=0.1, l=3.0), lower=0)
+      
+      fn= function(x, m,s,b,c)  c * b^(-c) * x^(c-1) * exp(-(x/b)^c)  * 1/((2*pi)^0.5 * s) * exp(-(x-m)^2/(2*s^2))
+      p=fitdistr(x, fn, start=list(m=0.3, s=0.1, b=0.25, c=5.2), 
+                 control = list(trace = 1,fnscale=-1),
+                 lower=c(0.1, 0.01, 0.12, 1.1),upper = c(1.0,1.0,1,10))
+      
+      kk=round(coef(p), 4)
+      yy=fn(xx, kk[1],kk[2],kk[3],kk[4])
+      
       s=expression(paste(mu%==% sigma, kk[1],kk[2],kk[3],kk[4]))
+      
     }else if (input$model=='ex-Gaussian'){
         #fn=function(t,m,s,v){
           #o=integrate(function(y) exp(-y/v)/(v) * 1/((2*pi)^0.5 * s) * exp(-(t-y-m)^2/(2*s^2))), 0, Inf)
@@ -98,7 +109,11 @@ shinyServer(function(input, output, session) {
           )
       s=sprintf('parameters: %.3f,  %.3f', kk[1], kk[2])
     }
-    
+
+## goodness of fit???
+#check http://cran.r-project.org/doc/contrib/Ricci-distributions-en.pdf    
+#qqPlot(x, distribution="weibull", shape=5.2, scale=0.327)
+
     #title(expression(s))
     #h$counts=h$counts/sum(h$counts)
     #plot(h, xlim = c(0,xMax), 
@@ -109,34 +124,36 @@ shinyServer(function(input, output, session) {
     
   })
   
-#  output$formula= renderUI({
-    #invalidateLater(2000, session)
-#    withMathJax(s)
-#  })
+
   
+
   output$info <- renderUI({
     
     HTML(switch(input$model,
 
 Density='Density approximation. You can adjust band width with control.',
-Normal='<p>Symmetric Gaussian distribution around mean with variation between 
+Normal='<p>Symmetric Gaussian distribution around (1) mean with (2) variation between 
       -3&sigma; and 3&sigma;</p>
 <p>
-          $$f(x)=\\frac{1}{\\sqrt{2}\\sigma} \\int exp(-t) dt$$
+          $$f(x)=\\frac{1}{\\sqrt{2}\\sigma} \\int e^{-t} dt$$
 </p>',
           
-Gamma='Asymmetric distribution. Parameters: shape, scale
+Gamma='Asymmetric distribution. Parameters: (1) shape, (2) scale
           ',
 
-Weibull='Asymmetric distribution. Parameters: shape, scale
+Weibull='Asymmetric distribution. Parameters: (1) shape, (2) scale
+
+        $$ f(x) = \\frac{c}{b^c} x^{c-1} e^{-\\left(\\frac{x}{b}\\right)^c} $$
+
           ',
 
 "ex-Gaussian"='ex-Gaussian
     $$f(x)=\\frac{\\lambda}{\\nu}\\left(\\frac{\\sigma^2}{2*\\nu}\\right)^{\\lambda-1}$$
     <p>
-    See also:<br>
+    See also:<br/>
           Sternberg S. Reaction Times and the Ex-Gaussian Distribution: When is it Appropriate?<br>
-          Sternberg, S. (2014). Sequential processes and the shapes of reaction-time distributions. <a href="http://www.psych.upenn.edu/ ̃saul/RTshapes.stages.pdf">pdf online</a><br>
+          Sternberg, S. (2014). Sequential processes and the shapes of reaction-time distributions.
+    </p>
 ',
 
 'Weibull-Gaussian'='<p>The Weibull-Gaussian is a convolution of the Gaussian (normal) and Weibull.</p> 
