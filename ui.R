@@ -2,8 +2,11 @@ library(shiny)
 
 zz=c('Normal', 'Weibull','Gamma',
      'Density',
+     'Wald',
      'ex-Gaussian',#='exgaussian',
-     'Weibull-Gaussian'#='weibullgaussian'
+     'ex-Wald',
+     'Weibull-Gaussian',#='weibullgaussian'
+   'Zaitsev-Skorik'
 )
 
 shinyUI(pageWithSidebar(
@@ -24,7 +27,7 @@ shinyUI(pageWithSidebar(
               )
     ),
     p('Pick .csv or .tsv file with two columns: time and reaction time, s.',
-      a('example',href='http://sherdim.shinyapps.io/retivo/rt1.csv')),
+      a('example',href='rt1.csv')),
     tags$hr(),
     sliderInput("valid",
                 "Valid diapason, s:",
@@ -41,23 +44,24 @@ shinyUI(pageWithSidebar(
                 value = 0.025),
     
     tags$hr(),
+    
     p('Parameters of distribution model'),
     selectInput('model','Model Type:', zz),
-    conditionalPanel(condition = "input.model == 'Density'",
-      
-    sliderInput("skewness",
-                "Skewness:",
-                min = 0,
-                max = 1,
-                value = 0.2),
-    sliderInput("bw",
-                "Bandwidth (density):",
-                min = 0.005,
-                max = 0.1,
-                step = 0.005,
-                value = 0.02)
+    conditionalPanel(condition = "input.model == 'Density'",  
+      sliderInput("bw",
+                  "Bandwidth (density):",
+                  min = 0.005,
+                  max = 0.1,
+                  step = 0.005,
+                  value = 0.02)
+    #),
+    #conditionalPanel(condition = "input.model == 'Normal'",  
+      #sliderInput("skewness",
+       #         "Skewness:",
+        #        min = -1,
+         #       max = 1,
+          #      value = 0)
     )
-    
   ),
   
   # Show a plot of the generated distribution
